@@ -1,0 +1,23 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Reference plugin integration status.">
+        <title>Reference plugin</title>
+        <link rel="stylesheet"
+              href="{% static 'itambox_plugin_reference/plugin.css' %}">
+    </head>
+    <body>
+        <main class="reference-status" aria-labelledby="reference-status-title">
+            <h1 id="reference-status-title">Reference plugin</h1>
+            <p>{{ display_label }}</p>
+            {% if secret_configured %}
+                <p>Secret setting configured.</p>
+            {% else %}
+                <p>Secret setting not configured.</p>
+            {% endif %}
+        </main>
+    </body>
+</html>

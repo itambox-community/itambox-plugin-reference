@@ -11,10 +11,15 @@ class ReferencePluginConfig(PluginConfig):
 
     name = "itambox_plugin_reference"
     verbose_name = "Reference plugin"
-    description = "A separately installable reference plugin package."
+    description = "A small example covering the stable plugin extension points."
     version = __version__
     author = "ITAMbox Community"
     itambox_range = ">=1.0,<1.1"
+    base_url = "itambox_plugin_reference"
+    settings_schema = {
+        "display_label": {"type": "str", "required": True},
+        "integration_secret": {"type": "str", "secret": True},
+    }
 
 
 config = ReferencePluginConfig

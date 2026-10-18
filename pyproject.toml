@@ -45,3 +45,6 @@ include = [
 
 [tool.uv]
 package = true
+
+[tool.djlint]
+profile = "django"

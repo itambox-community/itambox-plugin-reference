@@ -32,13 +32,32 @@ Add the package name to the host's `PLUGINS` setting (or the `ITAMBOX_PLUGINS` e
 PLUGINS = ["itambox_plugin_reference"]
 ```
 
-Plugin configuration is supplied through `ITAMBOX_PLUGINS_CONFIG`, keyed by the package name. The initial scaffold has no plugin-specific settings, so an empty object is sufficient:
+The required plain setting is supplied in `ITAMBOX_PLUGINS_CONFIG`. The optional secret setting is declared as secret in the schema and should be supplied through the deployment's secret-management channel using its per-key override:
 
 ```sh
-ITAMBOX_PLUGINS_CONFIG='{"itambox_plugin_reference": {}}'
+ITAMBOX_PLUGINS_CONFIG='{"itambox_plugin_reference":{"display_label":"Reference status"}}'
+ITAMBOX_PLUGIN_ITAMBOX_PLUGIN_REFERENCE_INTEGRATION_SECRET='<injected-by-secret-manager>'
 ```
 
-Do not put secrets in source control. Any secret configuration must be provided by the deployment's secret-management channel.
+The UI and asset panel report only whether the secret setting is configured; they never render its value. Do not put real secrets in source control.
+
+## Extension points in this package
+
+The implementation is pinned to the host code revision used by CI and verified with its executable plugin test helper. The host's versioned API Reference marks the manifest, settings schema, template/menu/viewset/GraphQL declarations, URLconf, permission targets, and verification helper Stable. The example's plugin-owned model is required by #872, but the host's tenant-scoping manager is not part of that Stable plugin API inventory; pin the host revision and requalify before changing it. The documentation's broader getting-started text still calls the plugin system Experimental, so this package does not make a wider stability claim.
+
+| Extension point | Example in this package | Host documentation |
+|---|---|---|
+| Tenant-owned model and migration | `models.py`, `migrations/0001_initial.py`; the model uses the host tenant-scoped manager and references the host tenant, with no host table referencing the plugin model | [Tenant model guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/models/organization/tenant.md), [pinned tenant manager source](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/core/managers.py) |
+| Asset detail template panel | `template_content.py` and the namespaced `templates/itambox_plugin_reference/asset_panel.html` | [Template injection guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/hooks.md#1-template-injection), [pinned composition source](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/assembly.py) |
+| Shared Plugins navigation item | `navigation.py` | [Navigation guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/hooks.md#2-sidebar-navigation), [pinned composition source](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/assembly.py) |
+| Plugin UI route | `urls.py` and `views.py`, mounted under `/plugins/itambox_plugin_reference/` | [UI routing guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/hooks.md#3-web-ui-routing), [pinned URL assembly source](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/urls.py) |
+| Read-only REST endpoint | `api/viewsets.py` and `serializers.py`, mounted under `/api/plugins/itambox_plugin_reference/entries/` | [REST resources guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/hooks.md#4-rest-api-resources), [Stable API contract](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/api_reference.md#extension-points), [pinned viewset source](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/api/viewsets.py) |
+| GraphQL query | `graphql/schema.py`; query-only and protected by the model view permission | [GraphQL guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/hooks.md#5-graphql-schema-extension), [pinned composition source](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/assembly.py) |
+| Role-matrix permission target | `permissions.py` declares the plugin-owned model | [Permission targets in the API Reference](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/api_reference.md#extension-points), [pinned permission-target validation](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/assembly.py), [role matrix](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/organization/forms/role_matrix.py) |
+| Required and secret settings | `settings_schema` in the plugin manifest; values are read through `get_plugin_config` | [Configuration guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/api_reference.md#configuration), [pinned settings schema and secret handling](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/settings_schema.py), [pinned configuration accessor](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/__init__.py) |
+| Namespaced templates and static assets | `templates/itambox_plugin_reference/` and `static/itambox_plugin_reference/`; the panel loads an external stylesheet without inline style or script | [Template injection guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/plugins/hooks.md#1-template-injection), [deployment security guide](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/docs/security/deployment-security.md) |
+
+The tests verify plugin composition through `itambox.plugins.testing.verify_plugins`, exercise tenant and token boundaries over real HTTP requests, check the role matrix and GraphQL query, and verify package assets. CI also runs the host's template linter and the plugin's CSP assertions. The pinned implementation's manifest and configuration contract lives in [`PluginConfig`](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/__init__.py) and its [test helper](https://github.com/itambox-community/itambox-webapp/blob/b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3/itambox/itambox/plugins/testing.py).
 
 ## Compatibility
 
@@ -55,7 +74,7 @@ sudo apt-get update
 sudo apt-get install --no-install-recommends -y build-essential libldap2-dev libsasl2-dev libssl-dev
 ```
 
-Then run:
+The integration suite requires PostgreSQL 16. Set `ITAMBOX_DB_*` to a disposable test database, enable this plugin, and provide the required `display_label` value. Then run from the plugin repository root:
 
 ```sh
 git clone https://github.com/itambox-community/itambox-webapp.git itambox-webapp
@@ -63,7 +82,13 @@ git -C itambox-webapp checkout b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3
 uv sync --project itambox-webapp --locked --group dev
 uv build
 uv pip install --python itambox-webapp/.venv/bin/python dist/*.whl
-PYTHONPATH=itambox-webapp/itambox uv run --project itambox-webapp --locked --no-sync python -m unittest discover -s tests -p 'test_*.py' -v
+ITAMBOX_ENV=dev ITAMBOX_PLUGINS=itambox_plugin_reference \
+  ITAMBOX_PLUGINS_CONFIG='{"itambox_plugin_reference":{"display_label":"Plugin test"}}' \
+  PYTHONPATH=itambox-webapp/itambox \
+  uv run --project itambox-webapp --locked --no-sync \
+  pytest -c itambox-webapp/pyproject.toml tests -q
+uv run --project itambox-webapp --locked --no-sync \
+  djlint src/itambox_plugin_reference/templates --check --lint
 ```
 
 On Windows, pass `itambox-webapp/.venv/Scripts/python.exe` to `uv pip install`; use the host source directory in `PYTHONPATH` with the platform's path separator. The CI workflow is the canonical, Linux-tested version of these steps.

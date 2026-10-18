@@ -1,0 +1,4 @@
+.reference-status {
+  border-inline-start: 0.25rem solid var(--bs-primary, #0d6efd);
+  padding-inline-start: 1rem;
+}

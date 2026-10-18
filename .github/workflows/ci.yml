@@ -12,8 +12,31 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16@sha256:1a6ab3f5345eb6dbe04a1349529caabdb0ab09293a09590fad07b2246bfa4b54
+        env:
+          POSTGRES_DB: itambox
+          POSTGRES_USER: itambox
+          POSTGRES_PASSWORD: itambox
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U itambox -d itambox"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       ITAMBOX_HOST_REF: b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3
+      ITAMBOX_ENV: dev
+      ITAMBOX_PLUGINS: itambox_plugin_reference
+      ITAMBOX_PLUGINS_CONFIG: '{"itambox_plugin_reference":{"display_label":"Plugin CI"}}'
+      ITAMBOX_DB_HOST: 127.0.0.1
+      ITAMBOX_DB_PORT: "5432"
+      ITAMBOX_DB_NAME: itambox
+      ITAMBOX_DB_USER: itambox
+      ITAMBOX_DB_PASSWORD: itambox
+      ITAMBOX_DB_SSLMODE: disable
     steps:
       - name: Check out plugin
         uses: actions/checkout@v4
@@ -58,4 +81,9 @@ jobs:
           PYTHONPATH: .ci/itambox-webapp/itambox
         run: >-
           uv run --project .ci/itambox-webapp --locked --no-sync
-          python -m unittest discover -s tests -p 'test_*.py' -v
+          pytest -c .ci/itambox-webapp/pyproject.toml tests -q
+
+      - name: Lint plugin templates
+        run: >-
+          uv run --project .ci/itambox-webapp --locked --no-sync
+          djlint src/itambox_plugin_reference/templates --check --lint
