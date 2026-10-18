@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: Apache-2.0
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "itambox-plugin-reference"
+dynamic = ["version"]
+description = "A separately installable reference plugin package."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "ITAMbox Community" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Django",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+]
+
+[project.urls]
+Repository = "https://github.com/itambox-community/itambox-plugin-reference"
+Issues = "https://github.com/itambox-community/itambox-webapp/issues/871"
+
+[dependency-groups]
+dev = []
+
+[tool.hatch.version]
+path = "src/itambox_plugin_reference/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/itambox_plugin_reference"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/LICENSE",
+    "/pyproject.toml",
+]
+
+[tool.uv]
+package = true

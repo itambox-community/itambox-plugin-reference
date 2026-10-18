@@ -1,0 +1,51 @@
+name: Publish to PyPI
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing Git tag to build and publish (for example, v0.1.0)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/itambox-plugin-reference
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out selected release tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.11.31
+
+      - name: Verify tag matches package version
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          VERSION="$(python -c 'import ast; from pathlib import Path; module = ast.parse(Path("src/itambox_plugin_reference/__init__.py").read_text()); print(next(node.value.value for node in module.body if isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "__version__" for target in node.targets)))')"
+          test -n "$VERSION"
+          test "$RELEASE_TAG" = "v$VERSION"
+
+      - name: Build distributions
+        run: uv build --out-dir dist
+
+      - name: Publish with PyPI Trusted Publishing
+        uses: pypa/gh-action-pypi-publish@release/v1

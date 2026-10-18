@@ -1,0 +1,56 @@
+name: Plugin CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      ITAMBOX_HOST_REF: b82f4580e5cd9ad0ed0f28abb769d48d183bf1f3
+    steps:
+      - name: Check out plugin
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.11.31
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Check out pinned host source
+        run: |
+          git init .ci/itambox-webapp
+          git -C .ci/itambox-webapp remote add origin https://github.com/itambox-community/itambox-webapp.git
+          git -C .ci/itambox-webapp fetch --depth 1 origin "$ITAMBOX_HOST_REF"
+          git -C .ci/itambox-webapp checkout --detach FETCH_HEAD
+          test "$(git -C .ci/itambox-webapp rev-parse HEAD)" = "$ITAMBOX_HOST_REF"
+
+      - name: Check lock and build distributions
+        run: |
+          uv lock --check
+          uv build --out-dir dist
+
+      - name: Install host dependencies and plugin wheel
+        run: |
+          uv sync --project .ci/itambox-webapp --locked --group dev
+          uv pip install --python .ci/itambox-webapp/.venv/bin/python dist/*.whl
+
+      - name: Run host plugin verification tests
+        env:
+          PYTHONPATH: .ci/itambox-webapp/itambox
+        run: >-
+          uv run --project .ci/itambox-webapp --locked --no-sync
+          python -m unittest discover -s tests -p 'test_*.py' -v
