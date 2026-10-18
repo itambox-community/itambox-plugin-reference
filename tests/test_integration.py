@@ -84,7 +84,7 @@ class ReferenceEntryIntegrationTests(TenantTestMixin, TestCase):
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Token {token.key}",
         )
-        self.assertEqual(write_response.status_code, 405)
+        self.assertEqual(write_response.status_code, 403)
         self.assertFalse(
             ReferenceEntry._base_manager.filter(label="must not be created").exists()
         )
@@ -107,15 +107,33 @@ class ReferenceEntryIntegrationTests(TenantTestMixin, TestCase):
         )
         self.assertNotIn("Tenant B entry", response.content.decode())
 
+        denied_user = get_user_model().objects.create_user(
+            username="plugin_graphql_without_view_permission",
+            password="test-password",
+        )
+        denied_role = Role.objects.create(
+            tenant=self.tenant, name="No GraphQL view permission", permissions=[]
+        )
+        grant(denied_user, self.tenant, denied_role)
+        denied_token = Token.objects.create(user=denied_user, tenant=self.tenant)
+        denied_response = self.client.post(
+            "/graphql/",
+            data=json.dumps({"query": "{ referenceEntries { label } }"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Token {denied_token.key}",
+        )
+        self.assertEqual(denied_response.status_code, 200)
+        denied_body = denied_response.json()
+        self.assertTrue(denied_body.get("errors"))
+        self.assertIn("Permission denied", denied_body["errors"][0]["message"])
+
         anonymous_response = self.client.post(
             "/graphql/",
             data=json.dumps({"query": "{ referenceEntries { label } }"}),
             content_type="application/json",
         )
-        self.assertEqual(anonymous_response.status_code, 200)
-        anonymous_body = anonymous_response.json()
-        self.assertTrue(anonymous_body.get("errors"))
-        self.assertIn("Permission denied", anonymous_body["errors"][0]["message"])
+        self.assertEqual(anonymous_response.status_code, 401)
+        self.assertNotIn("Tenant A entry", anonymous_response.content.decode())
 
     @override_settings(
         PLUGINS_RESOLVED_CONFIG={
