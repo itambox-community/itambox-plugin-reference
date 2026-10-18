@@ -48,7 +48,14 @@ The current CI host pin is the exact source commit `b82f4580e5cd9ad0ed0f28abb769
 
 ## Run the plugin verification tests
 
-The tests use the host-provided `itambox.plugins.testing.verify_plugins` helper. The host application is not a pip-installable distribution; use a source checkout at the same immutable ref as CI and let `uv` install its locked dependencies:
+The tests use the host-provided `itambox.plugins.testing.verify_plugins` helper. The host application is not a pip-installable distribution; use a source checkout at the same immutable ref as CI and let `uv` install its locked dependencies. On Ubuntu, install the native LDAP build prerequisites first; CI does this automatically:
+
+```sh
+sudo apt-get update
+sudo apt-get install --no-install-recommends -y build-essential libldap2-dev libsasl2-dev libssl-dev
+```
+
+Then run:
 
 ```sh
 git clone https://github.com/itambox-community/itambox-webapp.git itambox-webapp

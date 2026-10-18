@@ -43,6 +43,11 @@ jobs:
           uv lock --check
           uv build --out-dir dist
 
+      - name: Install host build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y build-essential libldap2-dev libsasl2-dev libssl-dev
+
       - name: Install host dependencies and plugin wheel
         run: |
           uv sync --project .ci/itambox-webapp --locked --group dev
